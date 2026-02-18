@@ -5,11 +5,10 @@ using System.Windows.Forms;
 
 namespace CounterStrafeTest.Core
 {
-    // 定义按键事件参数
     public class GameKeyEventArgs : EventArgs
     {
-        public Keys LogicKey { get; } // 映射后的逻辑键 (WASD)
-        public Keys PhysicalKey { get; } // 物理键
+        public Keys LogicKey { get; }
+        public Keys PhysicalKey { get; }
         public bool IsDown { get; }
         public GameKeyEventArgs(Keys logic, Keys phys, bool down) { LogicKey = logic; PhysicalKey = phys; IsDown = down; }
     }
@@ -19,23 +18,35 @@ namespace CounterStrafeTest.Core
         private readonly Dictionary<Keys, Keys> _keyMap = new Dictionary<Keys, Keys>();
         private readonly Dictionary<Keys, bool> _keyState = new Dictionary<Keys, bool>();
 
+        // 键盘事件
         public event EventHandler<GameKeyEventArgs> OnGameKeyEvent;
+        // 开火事件 (携带高精度时间戳)
+        public event Action<long> OnFireEvent;
 
         public InputCore()
         {
-            // 默认映射
             _keyMap[Keys.W] = Keys.W; _keyMap[Keys.A] = Keys.A;
             _keyMap[Keys.S] = Keys.S; _keyMap[Keys.D] = Keys.D;
         }
 
         public void Register(IntPtr hwnd)
         {
-            var rid = new NativeMethods.RAWINPUTDEVICE[1];
+            // 注册两个设备：键盘(Usage 0x06) 和 鼠标(Usage 0x02)
+            var rid = new NativeMethods.RAWINPUTDEVICE[2];
+            
+            // Keyboard
             rid[0].usUsagePage = 0x01;
             rid[0].usUsage = 0x06;
             rid[0].dwFlags = NativeMethods.RIDEV_INPUTSINK;
             rid[0].hwndTarget = hwnd;
-            NativeMethods.RegisterRawInputDevices(rid, 1, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTDEVICE)));
+
+            // Mouse
+            rid[1].usUsagePage = 0x01;
+            rid[1].usUsage = 0x02;
+            rid[1].dwFlags = NativeMethods.RIDEV_INPUTSINK;
+            rid[1].hwndTarget = hwnd;
+
+            NativeMethods.RegisterRawInputDevices(rid, 2, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTDEVICE)));
         }
 
         public void ProcessMessage(Message m)
@@ -45,17 +56,31 @@ namespace CounterStrafeTest.Core
             uint dwSize = 0;
             NativeMethods.GetRawInputData(m.LParam, NativeMethods.RID_INPUT, IntPtr.Zero, ref dwSize, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTHEADER)));
             
+            if (dwSize == 0) return;
+
             IntPtr buffer = Marshal.AllocHGlobal((int)dwSize);
             try
             {
                 if (NativeMethods.GetRawInputData(m.LParam, NativeMethods.RID_INPUT, buffer, ref dwSize, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTHEADER))) == dwSize)
                 {
                     var raw = Marshal.PtrToStructure<NativeMethods.RAWINPUT>(buffer);
+                    
+                    // 处理键盘
                     if (raw.header.dwType == NativeMethods.RIM_TYPEKEYBOARD)
                     {
                         Keys vKey = (Keys)raw.keyboard.VKey;
                         bool isDown = (raw.keyboard.Flags & 1) == 0;
                         HandlePhysicalKey(vKey, isDown);
+                    }
+                    // 处理鼠标 (检测左键按下)
+                    else if (raw.header.dwType == NativeMethods.RIM_TYPEMOUSE)
+                    {
+                        // 0x0001 = Left Button Down
+                        if ((raw.mouse.ulButtons & NativeMethods.RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
+                        {
+                            NativeMethods.QueryPerformanceCounter(out long now);
+                            OnFireEvent?.Invoke(now);
+                        }
                     }
                 }
             }
@@ -67,11 +92,9 @@ namespace CounterStrafeTest.Core
             if (!_keyMap.ContainsKey(physKey)) return;
             Keys logicKey = _keyMap[physKey];
 
-            // 状态去重
             if (_keyState.ContainsKey(logicKey) && _keyState[logicKey] == isDown) return;
             _keyState[logicKey] = isDown;
 
-            // 触发事件
             OnGameKeyEvent?.Invoke(this, new GameKeyEventArgs(logicKey, physKey, isDown));
         }
 
@@ -88,10 +111,8 @@ namespace CounterStrafeTest.Core
         public void ResetMapping()
         {
             _keyMap.Clear();
-            _keyMap[Keys.W] = Keys.W; 
-            _keyMap[Keys.A] = Keys.A;
-            _keyMap[Keys.S] = Keys.S; 
-            _keyMap[Keys.D] = Keys.D;
+            _keyMap[Keys.W] = Keys.W; _keyMap[Keys.A] = Keys.A;
+            _keyMap[Keys.S] = Keys.S; _keyMap[Keys.D] = Keys.D;
         }
     }
 }

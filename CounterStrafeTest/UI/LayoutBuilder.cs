@@ -16,6 +16,10 @@ namespace CounterStrafeTest.UI
         public Button BtnTest;          // 测试按钮 (原刷新)
         public Button BtnMap, BtnThreshold, BtnCount, BtnReset; // 其他功能按钮
         public Panel LeftPanel;         // 左侧主面板
+        public Panel PnlSimulation; // 模拟模式的覆盖层
+        public Label LblSimStatus;  // 模拟模式状态 (READY / BAM!)
+        public Label LblSimResult;  // 模拟模式结果详情
+        public Button BtnExitSim;   // 退出模拟
     }
 
     public static class LayoutBuilder
@@ -107,6 +111,57 @@ namespace CounterStrafeTest.UI
             chartsLayout.Controls.Add(comps.GraphWS, 0, 1);
             
             mainLayout.Controls.Add(chartsLayout, 1, 0);
+            
+            // === 模拟模式覆盖层 (Dock=Fill, 默认隐藏) ===
+            comps.PnlSimulation = new Panel 
+            { 
+                Dock = DockStyle.Fill, 
+                BackColor = Color.FromArgb(20, 20, 20), 
+                Visible = false 
+            };
+
+// 居中容器
+            var simCenter = new TableLayoutPanel 
+            { 
+                Dock = DockStyle.Fill, 
+                RowCount = 3, 
+                ColumnCount = 1 
+            };
+            simCenter.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+            simCenter.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
+            simCenter.RowStyles.Add(new RowStyle(SizeType.Percent, 20F));
+
+            comps.LblSimStatus = new Label 
+            { 
+                Text = "WAITING FOR STRAFE...", 
+                ForeColor = Color.White, 
+                Font = new Font("Segoe UI", 36, FontStyle.Bold), 
+                TextAlign = ContentAlignment.MiddleCenter, 
+                Dock = DockStyle.Fill,
+                AutoSize = false
+            };
+
+            comps.LblSimResult = new Label 
+            { 
+                Text = "", 
+                ForeColor = Color.LightGray, 
+                Font = new Font("Segoe UI", 16), 
+                TextAlign = ContentAlignment.TopCenter, 
+                Dock = DockStyle.Fill,
+                AutoSize = false
+            };
+
+            comps.BtnExitSim = UiFactory.CreateButton("退出测试", null);
+            comps.BtnExitSim.Anchor = AnchorStyles.None;
+            comps.BtnExitSim.Size = new Size(200, 50);
+
+            simCenter.Controls.Add(comps.LblSimStatus, 0, 0);
+            simCenter.Controls.Add(comps.LblSimResult, 0, 1);
+            simCenter.Controls.Add(comps.BtnExitSim, 0, 2);
+
+            comps.PnlSimulation.Controls.Add(simCenter);
+            form.Controls.Add(comps.PnlSimulation); // 添加到最外层，覆盖所有
+            comps.PnlSimulation.BringToFront();
 
             return comps;
         }

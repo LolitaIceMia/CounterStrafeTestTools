@@ -12,8 +12,6 @@ namespace CounterStrafeTest
         static void Main()
         {
             ApplicationConfiguration.Initialize();
-
-            // 这里可以检测系统语言自动设置，为了简单我们默认中文
             // Localization.CurrentLanguage = AppLanguage.English; 
 
             DialogResult result = MessageBox.Show(

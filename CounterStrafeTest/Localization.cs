@@ -20,6 +20,9 @@ namespace CounterStrafeTest
             {
                 AppLanguage.Chinese, new Dictionary<string, string>
                 {
+                    //boot
+                    { "Startup_Title", "CS2 急停评估工具 Pro" },
+                    { "Startup_Msg", "您使用的键盘轴体是否为磁轴？" },
                     { "Title", "CS2 急停评估工具 Pro From 狐瓜西" },
                     { "Btn_Test", "模拟测试" },
                     { "Btn_Mapping", "按键映射" },
@@ -73,7 +76,9 @@ namespace CounterStrafeTest
             {
                 AppLanguage.English, new Dictionary<string, string>
                 {
-                    { "Title", "CS2 Counter-Strafe Pro" },
+                    { "Startup_Title", "CS2 Counter-Strafe Pro" },
+                    { "Startup_Msg", "Is the keyboard you are using a magnetic switch?" },
+                    { "Title", "CS2 Counter-Strafe Pro From AokiChiharu" },
                     { "Btn_Test", "Sim Test" },
                     { "Btn_Mapping", "Key Map" },
                     { "Btn_Threshold", "Threshold" },

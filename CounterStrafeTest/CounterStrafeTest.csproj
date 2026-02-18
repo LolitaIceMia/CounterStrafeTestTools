@@ -9,7 +9,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Resources\" />
+        <None Update="Resources\language.ico">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>

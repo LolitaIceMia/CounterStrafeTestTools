@@ -40,18 +40,18 @@ namespace CounterStrafeTest.UI
             form.Controls.Add(mainLayout);
             comps.BtnLang = new Button
             {
-                Size = new Size(10, 10),
-                // 距离右侧 45 像素（考虑滚动条空间），上方 10 像素
-                Location = new Point(form.ClientSize.Width - 5, 5),
+                Size = new Size(32, 32),
+                Location = new Point(form.ClientSize.Width - 50, 5),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.Transparent,
                 Cursor = Cursors.Hand,
                 TextImageRelation = TextImageRelation.ImageAboveText
             };
+            comps.BtnLang.FlatAppearance.BorderSize = 0;
+            comps.BtnLang.FlatAppearance.MouseOverBackColor = Color.FromArgb(40, 255, 255, 255);
             try 
             {
-                // 假设图标位于程序运行目录下的 Resources 文件夹中
                 comps.BtnLang.Image = Image.FromFile("Resources/Language.ico");
             }
             catch 

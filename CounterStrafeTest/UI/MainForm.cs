@@ -33,6 +33,15 @@ namespace CounterStrafeTest.UI
 
             _ui = LayoutBuilder.Build(this);
             
+            _ui.BtnLang.Click += (s, e) => 
+            {
+                // 切换语言状态
+                Localization.CurrentLanguage = Localization.CurrentLanguage == AppLanguage.Chinese 
+                    ? AppLanguage.English : AppLanguage.Chinese;
+    
+                // 刷新全量 UI 文本
+                UpdateUiText();
+            };
             // 绑定按钮事件：第一个按钮改为触发模拟测试
             LayoutBuilder.AddButtons(_ui, OnTestModeToggle, OnMap, OnThreshold, OnCount, OnReset);
             
@@ -357,13 +366,25 @@ namespace CounterStrafeTest.UI
 
         private void UpdateUiText() 
         {
-            _ui.BtnTest.Text = "模拟测试"; 
+            // 窗口标题
+            this.Text = Localization.Get("Title");
+
+            // 底部功能按钮
+            _ui.BtnTest.Text = Localization.Get("Btn_Test");
             _ui.BtnReset.Text = Localization.Get("Btn_Reset");
             _ui.BtnMap.Text = Localization.Get("Btn_Mapping");
             _ui.BtnThreshold.Text = Localization.Get("Btn_Threshold");
             _ui.BtnCount.Text = Localization.Get("Btn_Count");
+
+            // 图表标题
             _ui.GraphAD.SetTitle(Localization.Get("Chart_AD_Title"));
             _ui.GraphWS.SetTitle(Localization.Get("Chart_WS_Title"));
+
+            // 模拟测试界面的状态文本（如果当前在模拟模式）
+            if (_isSimMode && !_simResultShown)
+            {
+                _ui.LblSimStatus.Text = Localization.Get("Feedback_Default");
+            }
         }
 
         private void OnMap(object s, EventArgs e) 

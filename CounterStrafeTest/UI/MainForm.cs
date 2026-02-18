@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using CounterStrafeTest.Core;
@@ -12,6 +13,9 @@ namespace CounterStrafeTest.UI
         private readonly InputCore _inputCore;
         private readonly StrafeLogic _strafeLogic;
 
+        // 气泡管理列表：Index 0 始终是最新的
+        private List<BubbleControl> _activeBubbles = new List<BubbleControl>();
+
         private int _threshold = 120;
         private int _recCount = 40;
 
@@ -21,13 +25,9 @@ namespace CounterStrafeTest.UI
             this.BackColor = UiFactory.ColorBack;
             this.ForeColor = UiFactory.ColorText;
 
-            // 1. 构建界面
             _ui = LayoutBuilder.Build(this);
-            
-            // 2. 绑定按钮 (直接使用，不再报错)
             LayoutBuilder.AddButtons(_ui, OnRefresh, OnMap, OnThreshold, OnCount, OnReset);
 
-            // 3. 初始化核心
             _inputCore = new InputCore();
             _inputCore.OnGameKeyEvent += OnGameKey;
             _strafeLogic = new StrafeLogic();
@@ -38,22 +38,32 @@ namespace CounterStrafeTest.UI
 
         private void ShowFeedbackBubble(string text, Color color)
         {
+            // 不再需要列表维护，也不用管淡出动画了，直接清空
+            while (_ui.PnlBubbleArea.Controls.Count > 0)
+            {
+                Control old = _ui.PnlBubbleArea.Controls[0];
+                _ui.PnlBubbleArea.Controls.Remove(old);
+                old.Dispose();
+            }
+            
+            // 2. 创建新气泡
             var bubble = new BubbleControl(text, color);
+            
+            // 3. 设置位置 (居中, Y=10)
+            // LeftPanel宽450, Bubble宽200 -> (450-200)/2 = 125
+            bubble.Location = new Point(125, 10);
+            
+            // 4. 绑定自然销毁事件 (如果用户手速慢，气泡会自然淡出)
             bubble.AnimationComplete += (s, e) => {
-                if (!_ui.PnlBubbles.IsDisposed)
-                    _ui.PnlBubbles.Controls.Remove(bubble);
-                bubble.Dispose();
+                if (!_ui.PnlBubbleArea.IsDisposed && !bubble.IsDisposed)
+                {
+                    _ui.PnlBubbleArea.Controls.Remove(bubble);
+                    bubble.Dispose();
+                }
             };
 
-            _ui.PnlBubbles.Controls.Add(bubble);
-            _ui.PnlBubbles.Controls.SetChildIndex(bubble, 0);
-
-            if (_ui.PnlBubbles.Controls.Count > 3)
-            {
-                Control oldest = _ui.PnlBubbles.Controls[_ui.PnlBubbles.Controls.Count - 1];
-                _ui.PnlBubbles.Controls.Remove(oldest);
-                oldest.Dispose();
-            }
+            // 5. 添加到界面
+            _ui.PnlBubbleArea.Controls.Add(bubble);
         }
 
         private void LogStrafeResult(StrafeResult r)
@@ -62,6 +72,7 @@ namespace CounterStrafeTest.UI
             string evalRaw = ColorHelper.GetEvaluation(r.Latency);
             string evalText = (evalRaw == "Perfect" || evalRaw == "Great") ? evalRaw : Localization.Get("Eval_" + evalRaw);
 
+            // 触发气泡
             ShowFeedbackBubble($"{evalText}: {r.Latency:F1}ms", color);
 
             string msg = $"[{DateTime.Now:HH:mm:ss}] [{r.Axis}] {r.Latency:F1}ms ({evalText})";
@@ -74,7 +85,7 @@ namespace CounterStrafeTest.UI
 
         private void OnReset(object s, EventArgs e)
         {
-            if (MessageBox.Show("Reset All?", "Confirm", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (MessageBox.Show("确认重置所有数据？", "重置", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 _threshold = 120;
                 _recCount = 40;
@@ -83,10 +94,16 @@ namespace CounterStrafeTest.UI
                 _ui.GraphAD.Clear(); _ui.GraphAD.SetLimit(_recCount);
                 _ui.GraphWS.Clear(); _ui.GraphWS.SetLimit(_recCount);
                 _strafeLogic.Reset();
-                _ui.PnlBubbles.Controls.Clear();
-                MessageBox.Show("Done.");
+                
+                // 清空气泡
+                _ui.PnlBubbleArea.Controls.Clear();
+                _activeBubbles.Clear();
+
+                MessageBox.Show("已重置。");
             }
         }
+
+        // ... (其他方法保持不变) ...
 
         private void UpdateUiText() {
             _ui.BtnRefresh.Text = Localization.Get("Btn_Refresh");

@@ -93,9 +93,9 @@ namespace CounterStrafeTest.Core
 
         private void HandlePhysicalKey(Keys physKey, bool isDown)
         {
-            if (physKey == Keys.F11)
+            if (physKey == Keys.F11 || physKey == Keys.F10)
             {
-                OnGameKeyEvent?.Invoke(this, new GameKeyEventArgs(Keys.F11, physKey, isDown));
+                OnGameKeyEvent?.Invoke(this, new GameKeyEventArgs(physKey, physKey, isDown));
                 return;
             }
             if (!_keyMap.ContainsKey(physKey)) return;

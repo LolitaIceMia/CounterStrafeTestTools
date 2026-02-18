@@ -20,6 +20,7 @@ namespace CounterStrafeTest.UI
         public Label LblSimStatus;  // 模拟模式状态 (READY / BAM!)
         public Label LblSimResult;  // 模拟模式结果详情
         public Button BtnExitSim;   // 退出模拟
+        public Button BtnLang; //语言切换
     }
 
     public static class LayoutBuilder
@@ -37,6 +38,32 @@ namespace CounterStrafeTest.UI
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 450F)); // 左侧固定宽 450
             mainLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));  // 右侧自适应
             form.Controls.Add(mainLayout);
+            comps.BtnLang = new Button
+            {
+                Size = new Size(10, 10),
+                // 距离右侧 45 像素（考虑滚动条空间），上方 10 像素
+                Location = new Point(form.ClientSize.Width - 5, 5),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.Transparent,
+                Cursor = Cursors.Hand,
+                TextImageRelation = TextImageRelation.ImageAboveText
+            };
+            try 
+            {
+                // 假设图标位于程序运行目录下的 Resources 文件夹中
+                comps.BtnLang.Image = Image.FromFile("Resources/Language.ico");
+            }
+            catch 
+            {
+                // 如果加载失败，显示文字占位
+                comps.BtnLang.Text = "L";
+                comps.BtnLang.ForeColor = Color.White;
+            }
+            
+            form.Controls.Add(comps.BtnLang);
+            comps.BtnLang.BringToFront();
+            comps.BtnLang.FlatAppearance.BorderSize = 0;
 
             // === 左侧面板构建 ===
             comps.LeftPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(0) };

@@ -204,87 +204,82 @@ namespace CounterStrafeTest.UI
 
         #region 结果计算与显示
 
-        private void CalculateSimResult() {
-           // 基础校验：确保数据完整且未重复判定
-           if (_simLastStrafe == null || _simLastFireTick == 0 || _simResultShown) return;
-           
-           _simResultShown = true;
+        private void CalculateSimResult()
+{
+    // 基础校验：确保数据完整且未重复判定
+    if (_simLastStrafe == null || _simLastFireTick == 0 || _simResultShown) return;
+    
+    _simResultShown = true;
 
-           // 1. 获取两项核心数据
-           long freq = _strafeLogic.Frequency;
-           double strafeLatency = _simLastStrafe.Latency; // 急停本身的物理延迟
-           double shootDelayMs = (double)(_simLastFireTick - _simLastStrafe.StopTick) * 1000.0 / freq; // 急停完成到开火的延迟
+    // 1. 获取两项核心数据：急停物理延迟与射击延迟
+    long freq = _strafeLogic.Frequency;
+    double strafeLatency = _simLastStrafe.Latency; // 急停本身的物理延迟
+    double shootDelayMs = (double)(_simLastFireTick - _simLastStrafe.StopTick) * 1000.0 / freq; // 急停完成到开火的延迟
 
-           string grade = "FAIL";
-           Color gradeColor = Color.Red;
-           string detailTips = "";
+    string grade = "FAIL";
+    Color gradeColor = Color.Red;
+    string detailTips = "";
 
-           // 2. 综合判定逻辑 (嵌套优先级：先查操作错误，再定评级)
-           
-           // 情况 A：急停本身不合格 (>15ms)
-           if (Math.Abs(strafeLatency) > 15.0)
-           {
-               grade = strafeLatency < 0 ? "急停过早 (重叠过长)" : "急停过迟 (松键太慢)";
-               gradeColor = Color.Red;
-               detailTips = "急停操作不规范，无法评级";
-           }
-           // 情况 B：急停合格，但开火时机不对
-           else if (shootDelayMs < -50)
-           {
-               grade = "开火过早";
-               gradeColor = Color.DeepSkyBlue;
-               detailTips = "你在急停完成前就开火了";
-           }
-           else if (shootDelayMs > 100)
-           {
-               grade = "开火过迟 (慢了)";
-               gradeColor = Color.Tomato;
-               detailTips = "急停完成后等待时间过长";
-           }
-           else
-           {
-               // 取两项操作中较差的一项作为评级基准
-               double combinedScore = Math.Max(Math.Abs(strafeLatency), shootDelayMs);
+    // 2. 综合判定逻辑
+    
+    // 情况 A：急停本身不合格 (判定绝对值 > 15ms)
+    if (Math.Abs(strafeLatency) > 15.0)
+    {
+        grade = strafeLatency < 0 ? "急停过早" : "急停过迟";
+        gradeColor = Color.Red;
+        detailTips = "急停动作物理延迟超过 15ms，不合格";
+    }
+    // 情况 B：急停合格 (<= 15ms)，开始判定开火时机
+    else if (shootDelayMs > -20 && shootDelayMs < 50)
+    {
+        grade = "PERFECT (完美)";
+        gradeColor = Color.Gold;
+        detailTips = "教科书级的急停射击！";
+    }
+    else if (shootDelayMs > -50 && shootDelayMs < 100)
+    {
+        grade = "GREAT (优秀)";
+        gradeColor = Color.LimeGreen;
+        detailTips = "非常出色的操作双手协同配合";
+    }
+    else if (shootDelayMs <= -50)
+    {
+        grade = "开火过早";
+        gradeColor = Color.DeepSkyBlue;
+        detailTips = "你在急停完成前过早击发";
+    }
+    else // shootDelayMs >= 100
+    {
+        grade = "开火过迟 (慢了)";
+        gradeColor = Color.Tomato;
+        detailTips = "急停完成后等待时间过长";
+    }
 
-               if (Math.Abs(strafeLatency)<=15&&shootDelayMs<100)
-               {
-                   grade = "PERFECT (完美)";
-                   gradeColor = Color.Gold;
-                   detailTips = "教科书级的急停射击！";
-               }
-               else
-               {
-                   grade = "GREAT (优秀)";
-                   gradeColor = Color.LimeGreen;
-                   detailTips = "非常出色的操作配合";
-               }
-           }
+    // 3. UI 更新显示
+    if (_ui.LblSimStatus != null)
+    {
+        _ui.LblSimStatus.Text = grade;
+        _ui.LblSimStatus.ForeColor = gradeColor;
+    }
 
-           // 3. UI 更新显示
-           if (_ui.LblSimStatus != null)
-           {
-               _ui.LblSimStatus.Text = grade;
-               _ui.LblSimStatus.ForeColor = gradeColor;
-           }
+    if (_ui.LblSimResult != null)
+    {
+        _ui.LblSimResult.Text = $"[项1] 急停延迟: {strafeLatency:F1}ms\n" +
+                                $"[项2] 射击延迟: {shootDelayMs:F1}ms\n\n" +
+                                $"{detailTips}\n" +
+                                $"2秒后系统重置...";
+    }
 
-           if (_ui.LblSimResult != null)
-           {
-               _ui.LblSimResult.Text = $"[项1] 急停延迟: {strafeLatency:F1}ms\n" +
-                                       $"[项2] 射击延迟: {shootDelayMs:F1}ms\n\n" +
-                                       $"{detailTips}\n" +
-                                       $"2秒后系统重置...";
-           }
-
-           // 4. 自动重置定时器 (显式指定命名空间以解决歧义)
-           System.Windows.Forms.Timer resetTimer = new System.Windows.Forms.Timer { Interval = 2000 };
-           resetTimer.Tick += (s, args) => 
-           {
-               resetTimer.Stop();
-               resetTimer.Dispose();
-               if (_isSimMode) ResetSimState();
-           };
-           resetTimer.Start();
-        }
+    // 4. 自动重置定时器
+    System.Windows.Forms.Timer resetTimer = new System.Windows.Forms.Timer { Interval = 2000 };
+    resetTimer.Tick += (s, args) => 
+    {
+        resetTimer.Stop();
+        resetTimer.Dispose();
+        if (_isSimMode) ResetSimState();
+    };
+    resetTimer.Start();
+}
 
         private void LogStrafeResult(StrafeResult r)
         {

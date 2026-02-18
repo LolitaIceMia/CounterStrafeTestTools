@@ -13,6 +13,7 @@ namespace CounterStrafeTest
             {
                 AppLanguage.Chinese, new Dictionary<string, string>
                 {
+                    // ... 其他保持不变 ...
                     { "Startup_Msg", "您使用的是磁轴键盘吗？" },
                     { "Startup_Title", "设备选择" },
                     { "Title", "CS2 急停评估工具 Pro" },
@@ -24,11 +25,14 @@ namespace CounterStrafeTest
                     { "Chart_AD_Title", "AD 急停时间差 (ms)" },
                     { "Chart_WS_Title", "WS 急停时间差 (ms)" },
 
-                    { "Btn_Refresh", "刷新 (F5)" },
+                    // --- 修改开始 ---
+                    { "Btn_Test", "模拟测试" }, // 原 Btn_Refresh
+                    // --- 修改结束 ---
+                    
                     { "Btn_Mapping", "按键映射 (F6)" },
                     { "Btn_Threshold", "过滤阈值" },
                     { "Btn_Count", "记录次数" },
-                    { "Btn_Reset", "重置所有" }, // 新增
+                    { "Btn_Reset", "重置所有" },
                     { "Lang_Switch", "语言/Language" },
 
                     { "Eval_Perfect", "完美" },
@@ -39,6 +43,7 @@ namespace CounterStrafeTest
             {
                 AppLanguage.English, new Dictionary<string, string>
                 {
+                    // ... English section ...
                     { "Startup_Msg", "Are you using a Magnetic Switch keyboard?" },
                     { "Startup_Title", "Device Selection" },
                     { "Title", "CS2 Counter-Strafe Tool Pro" },
@@ -50,11 +55,14 @@ namespace CounterStrafeTest
                     { "Chart_AD_Title", "AD Strafe Timing (ms)" },
                     { "Chart_WS_Title", "WS Strafe Timing (ms)" },
 
-                    { "Btn_Refresh", "Refresh (F5)" },
+                    // --- Change Start ---
+                    { "Btn_Test", "Test Simulation" }, // Old Btn_Refresh
+                    // --- Change End ---
+
                     { "Btn_Mapping", "Key Map (F6)" },
                     { "Btn_Threshold", "Threshold" },
                     { "Btn_Count", "Rec Count" },
-                    { "Btn_Reset", "Reset All" }, // New
+                    { "Btn_Reset", "Reset All" },
                     { "Lang_Switch", "Language" },
 
                     { "Eval_Perfect", "Perfect" },

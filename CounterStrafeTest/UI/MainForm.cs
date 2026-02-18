@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using CounterStrafeTest.Core;
@@ -12,9 +11,9 @@ namespace CounterStrafeTest.UI
         private GameUiComponents _ui;
         private readonly InputCore _inputCore;
         private readonly StrafeLogic _strafeLogic;
-
-        // 气泡管理列表：Index 0 始终是最新的
-        private List<BubbleControl> _activeBubbles = new List<BubbleControl>();
+        
+        // 用于测试功能的随机数生成器
+        private Random _rng = new Random();
 
         private int _threshold = 120;
         private int _recCount = 40;
@@ -26,7 +25,9 @@ namespace CounterStrafeTest.UI
             this.ForeColor = UiFactory.ColorText;
 
             _ui = LayoutBuilder.Build(this);
-            LayoutBuilder.AddButtons(_ui, OnRefresh, OnMap, OnThreshold, OnCount, OnReset);
+            
+            // 绑定按钮事件，注意这里第一个参数是 OnTest
+            LayoutBuilder.AddButtons(_ui, OnTest, OnMap, OnThreshold, OnCount, OnReset);
 
             _inputCore = new InputCore();
             _inputCore.OnGameKeyEvent += OnGameKey;
@@ -38,7 +39,7 @@ namespace CounterStrafeTest.UI
 
         private void ShowFeedbackBubble(string text, Color color)
         {
-            // 不再需要列表维护，也不用管淡出动画了，直接清空
+            // 清理旧气泡
             while (_ui.PnlBubbleArea.Controls.Count > 0)
             {
                 Control old = _ui.PnlBubbleArea.Controls[0];
@@ -46,11 +47,10 @@ namespace CounterStrafeTest.UI
                 old.Dispose();
             }
             
-            // 2. 创建新气泡
             var bubble = new BubbleControl(text, color);
+            // 气泡位置
             bubble.Location = new Point(20, 20);
             
-            // 4. 绑定自然销毁事件 (如果用户手速慢，气泡会自然淡出)
             bubble.AnimationComplete += (s, e) => {
                 if (!_ui.PnlBubbleArea.IsDisposed && !bubble.IsDisposed)
                 {
@@ -59,7 +59,6 @@ namespace CounterStrafeTest.UI
                 }
             };
 
-            // 5. 添加到界面
             _ui.PnlBubbleArea.Controls.Add(bubble);
         }
 
@@ -69,7 +68,6 @@ namespace CounterStrafeTest.UI
             string evalRaw = ColorHelper.GetEvaluation(r.Latency);
             string evalText = (evalRaw == "Perfect" || evalRaw == "Great") ? evalRaw : Localization.Get("Eval_" + evalRaw);
 
-            // 触发气泡
             ShowFeedbackBubble($"{evalText}: {r.Latency:F1}ms", color);
 
             string msg = $"[{DateTime.Now:HH:mm:ss}] [{r.Axis}] {r.Latency:F1}ms ({evalText})";
@@ -91,25 +89,41 @@ namespace CounterStrafeTest.UI
                 _ui.GraphAD.Clear(); _ui.GraphAD.SetLimit(_recCount);
                 _ui.GraphWS.Clear(); _ui.GraphWS.SetLimit(_recCount);
                 _strafeLogic.Reset();
-                
-                // 清空气泡
                 _ui.PnlBubbleArea.Controls.Clear();
-                _activeBubbles.Clear();
-
                 MessageBox.Show("已重置。");
             }
         }
 
-        // ... (其他方法保持不变) ...
-
-        private void UpdateUiText() {
-            _ui.BtnRefresh.Text = Localization.Get("Btn_Refresh");
+        private void UpdateUiText() 
+        {
+            // --- 【关键修复】 ---
+            // 使用 BtnTest 而不是 BtnRefresh
+            _ui.BtnTest.Text = Localization.Get("Btn_Test");
+            // -------------------
+            
             _ui.BtnReset.Text = Localization.Get("Btn_Reset");
             _ui.BtnMap.Text = Localization.Get("Btn_Mapping");
             _ui.BtnThreshold.Text = Localization.Get("Btn_Threshold");
             _ui.BtnCount.Text = Localization.Get("Btn_Count");
             _ui.GraphAD.SetTitle(Localization.Get("Chart_AD_Title"));
             _ui.GraphWS.SetTitle(Localization.Get("Chart_WS_Title"));
+        }
+
+        // --- 新增：测试按钮逻辑 ---
+        private void OnTest(object s, EventArgs e)
+        {
+            string axis = _rng.Next(0, 2) == 0 ? "AD" : "WS";
+            double latency = (_rng.NextDouble() * 20) - 10; 
+            if (_rng.NextDouble() > 0.9) latency = (_rng.NextDouble() * 100) - 50;
+
+            var result = new StrafeResult
+            {
+                Axis = axis,
+                Latency = latency,
+                ReleaseKey = axis == "AD" ? Keys.A : Keys.W,
+                PressKey = axis == "AD" ? Keys.D : Keys.S
+            };
+            LogStrafeResult(result);
         }
 
         private void OnGameKey(object sender, GameKeyEventArgs e) {
@@ -130,7 +144,7 @@ namespace CounterStrafeTest.UI
             base.WndProc(ref m);
         }
         
-        private void OnRefresh(object s, EventArgs e) { OnReset(s, e); }
+        // 按钮事件占位
         private void OnMap(object s, EventArgs e) { 
              string val = InputBox.Show("Mapping", "Enter 4 letters (WASD):");
              if (!string.IsNullOrEmpty(val)) _inputCore.UpdateMapping(val.ToUpper());

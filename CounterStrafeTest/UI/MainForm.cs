@@ -48,10 +48,7 @@ namespace CounterStrafeTest.UI
             
             // 2. 创建新气泡
             var bubble = new BubbleControl(text, color);
-            
-            // 3. 设置位置 (居中, Y=10)
-            // LeftPanel宽450, Bubble宽200 -> (450-200)/2 = 125
-            bubble.Location = new Point(125, 10);
+            bubble.Location = new Point(20, 20);
             
             // 4. 绑定自然销毁事件 (如果用户手速慢，气泡会自然淡出)
             bubble.AnimationComplete += (s, e) => {

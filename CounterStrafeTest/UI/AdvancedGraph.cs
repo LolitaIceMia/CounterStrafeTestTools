@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
+using CounterStrafeTest.Utils; 
 
 namespace CounterStrafeTest.UI
 {
@@ -123,28 +124,33 @@ namespace CounterStrafeTest.UI
         private void DrawScatterPlot(Graphics g, List<float> data, float graphW, float graphH, float zeroY)
         {
             float xStep = graphW / Math.Max(1, _limit - 1);
-            float yRange = 60f; // Y轴量程 +/- 60ms
+            float yRange = 60f; 
 
             for (int i = 0; i < data.Count; i++)
             {
                 float val = data[i];
-                // X坐标：从左到右分布
-                float x = PadLeft + i * xStep;
+                float x = 50 + i * xStep; // PadLeft = 50
                 
-                // Y坐标：映射值到像素高度
                 float normalizedVal = Math.Clamp(val, -yRange, yRange);
                 float pxOffset = (normalizedVal / yRange) * (graphH / 2);
-                float y = zeroY - pxOffset; // WinForms Y轴向下是正，所以减去偏移量
+                float y = zeroY - pxOffset;
 
-                // 颜色判定
-                Color c = Color.Gray;
-                if (Math.Abs(val) <= 20) c = Color.LimeGreen;
-                else if (val < 0) c = Color.DeepSkyBlue; // 早
-                else c = Color.OrangeRed; // 晚
+                // --- 修改开始：使用 ColorHelper ---
+                Color c = ColorHelper.GetColor(val);
+                // --- 修改结束 ---
 
-                using (Brush b = new SolidBrush(c))
+                // 如果是 Perfect (Gold)，画稍微大一点，并加个白边突出显示
+                if (Math.Abs(val) <= 1.0)
                 {
-                    g.FillEllipse(b, x - 4, y - 4, 8, 8); // 画点
+                    using (Brush b = new SolidBrush(c))
+                        g.FillEllipse(b, x - 5, y - 5, 10, 10);
+                    using (Pen p = new Pen(Color.White, 1.5f))
+                        g.DrawEllipse(p, x - 5, y - 5, 10, 10);
+                }
+                else
+                {
+                    using (Brush b = new SolidBrush(c))
+                        g.FillEllipse(b, x - 4, y - 4, 8, 8);
                 }
             }
         }

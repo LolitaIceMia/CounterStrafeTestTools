@@ -84,5 +84,14 @@ namespace CounterStrafeTest.Core
             _keyMap[(Keys)Enum.Parse(typeof(Keys), mappingStr[2].ToString())] = Keys.S;
             _keyMap[(Keys)Enum.Parse(typeof(Keys), mappingStr[3].ToString())] = Keys.D;
         }
+        
+        public void ResetMapping()
+        {
+            _keyMap.Clear();
+            _keyMap[Keys.W] = Keys.W; 
+            _keyMap[Keys.A] = Keys.A;
+            _keyMap[Keys.S] = Keys.S; 
+            _keyMap[Keys.D] = Keys.D;
+        }
     }
 }

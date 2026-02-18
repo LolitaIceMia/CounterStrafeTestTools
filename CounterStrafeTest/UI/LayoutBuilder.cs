@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Drawing;
 using System.Windows.Forms;
-using CounterStrafeTest.Utils; // 引用工具包
+using CounterStrafeTest.Utils;
 
 namespace CounterStrafeTest.UI
 {
-    // UI 组件容器，方便 MainForm 访问控件
     public class GameUiComponents
     {
         public Label LblFeedback;
@@ -12,17 +12,20 @@ namespace CounterStrafeTest.UI
         public ListBox ListHistory;
         public AdvancedGraph GraphAD;
         public AdvancedGraph GraphWS;
-        public Button BtnRefresh, BtnMap, BtnThreshold, BtnCount;
+        public Button BtnRefresh, BtnMap, BtnThreshold, BtnCount, BtnReset; // 新增 BtnReset
     }
 
     public static class LayoutBuilder
     {
         public static GameUiComponents Build(Form form)
         {
-            var comps = new GameUiComponents();
+            // 设置窗口大小 (1280x720)
             form.ClientSize = new Size(1280, 720);
-            form.MinimumSize = new Size(1280, 720); // 防止缩得太小
+            form.MinimumSize = new Size(1280, 720);
             form.StartPosition = FormStartPosition.CenterScreen;
+
+            var comps = new GameUiComponents();
+
             // 1. 主容器 (上下结构)
             var mainLayout = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2 };
             mainLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
@@ -35,32 +38,55 @@ namespace CounterStrafeTest.UI
 
             // 3. 内容区 (左右结构)
             var contentLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2 };
-            contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 400F));
+            contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 450F)); //稍微加宽一点左侧，防止按钮挤压
             contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             mainLayout.Controls.Add(contentLayout, 0, 1);
 
             // === 左侧 ===
             var leftPanel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(10) };
             
-            // 按键网格
-            var keysGrid = new TableLayoutPanel { Dock = DockStyle.Top, Height = 120, ColumnCount = 3, RowCount = 2 };
+            // --- 3.1 按键网格 (居中优化) ---
+            // 我们使用一个 Panel 包裹 TableLayoutPanel 来实现居中
+            var keyContainer = new Panel { Dock = DockStyle.Top, Height = 180 }; 
+            
+            // 实际的网格
+            var keysGrid = new TableLayoutPanel 
+            { 
+                Width = 260, Height = 170, // 3列 * (75+间距) ≈ 260
+                ColumnCount = 3, RowCount = 2,
+                Left = (450 - 260) / 2 - 10, // 手动水平居中 (Panel宽 - Grid宽)/2 - Padding
+                Top = 10 
+            };
+            
             comps.LblW = UiFactory.CreateKeyLabel("W"); comps.LblA = UiFactory.CreateKeyLabel("A");
             comps.LblS = UiFactory.CreateKeyLabel("S"); comps.LblD = UiFactory.CreateKeyLabel("D");
+            
             keysGrid.Controls.Add(comps.LblW, 1, 0);
             keysGrid.Controls.Add(comps.LblA, 0, 1);
             keysGrid.Controls.Add(comps.LblS, 1, 1);
             keysGrid.Controls.Add(comps.LblD, 2, 1);
+            
+            keyContainer.Controls.Add(keysGrid);
 
-            // 按钮面板
-            var btnPanel = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 60 };
+            // --- 3.2 按钮面板 (居中优化) ---
+            var btnPanel = new FlowLayoutPanel 
+            { 
+                Dock = DockStyle.Bottom, 
+                Height = 80, 
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = true,
+                Padding = new Padding(20, 5, 0, 0) // 增加左内边距来微调居中感
+            };
+            // 实际上 FlowLayoutPanel 很难自动居中内容，我们通过增加 Padding 或者让它宽度适应
+            // 这里我们采用简单策略：让按钮在底部排列，稍微居中一点
             
-            
-            // 日志列表
+            // --- 3.3 日志列表 ---
             comps.ListHistory = UiFactory.CreateLogList();
 
-            leftPanel.Controls.Add(comps.ListHistory);
-            leftPanel.Controls.Add(btnPanel);
-            leftPanel.Controls.Add(keysGrid);
+            // 组装左侧 (注意顺序: Dock Fill 最后加)
+            leftPanel.Controls.Add(comps.ListHistory); // Fill
+            leftPanel.Controls.Add(btnPanel);          // Bottom
+            leftPanel.Controls.Add(keyContainer);      // Top
             contentLayout.Controls.Add(leftPanel, 0, 0);
 
             // === 右侧图表 ===
@@ -80,19 +106,21 @@ namespace CounterStrafeTest.UI
             return comps;
         }
         
-        // 辅助方法：向面板添加按钮并绑定
         public static void AddButtons(GameUiComponents comps, FlowLayoutPanel panel, 
-            EventHandler onRefresh, EventHandler onMap, EventHandler onThres, EventHandler onCount)
+            EventHandler onRefresh, EventHandler onMap, EventHandler onThres, EventHandler onCount, EventHandler onReset)
         {
-            comps.BtnRefresh = UiFactory.CreateButton("刷新 (F5)", onRefresh);
-            comps.BtnMap = UiFactory.CreateButton("按键映射 (F6)", onMap);
+            comps.BtnRefresh = UiFactory.CreateButton("刷新", onRefresh);
+            comps.BtnMap = UiFactory.CreateButton("映射", onMap);
             comps.BtnThreshold = UiFactory.CreateButton("阈值", onThres);
-            comps.BtnCount = UiFactory.CreateButton("记录数", onCount);
+            comps.BtnCount = UiFactory.CreateButton("次数", onCount);
+            comps.BtnReset = UiFactory.CreateButton("重置", onReset); // 重置按钮
             
+            // 简单的布局调整，让5个按钮分两行或者挤一挤
             panel.Controls.Add(comps.BtnRefresh);
             panel.Controls.Add(comps.BtnMap);
             panel.Controls.Add(comps.BtnThreshold);
             panel.Controls.Add(comps.BtnCount);
+            panel.Controls.Add(comps.BtnReset);
         }
     }
 }

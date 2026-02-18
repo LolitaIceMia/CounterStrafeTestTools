@@ -44,7 +44,7 @@ namespace CounterStrafeTest.Utils
             var btn = new Button
             {
                 Text = text,
-                Width = 90,
+                Width = 75,
                 Height = 35,
                 BackColor = Color.Gray,
                 ForeColor = Color.White,

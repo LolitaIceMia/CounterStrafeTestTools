@@ -8,41 +8,94 @@ namespace CounterStrafeTest.UI
 {
     public partial class MainForm : Form
     {
-        // 组件引用
         private GameUiComponents _ui;
-        
-        // 核心模块
         private readonly InputCore _inputCore;
         private readonly StrafeLogic _strafeLogic;
 
-        // 设置参数
-        private int _threshold = 120;
-        private int _recCount = 40;
+        // 默认值常量
+        private const int DefaultThreshold = 120;
+        private const int DefaultRecCount = 40;
+
+        private int _threshold = DefaultThreshold;
+        private int _recCount = DefaultRecCount;
 
         public MainForm()
         {
-            // 1. 基础窗体属性
-            this.Text = "CS2急停评估工具 Pro (Decoupled)";
+            this.Text = "CS2 急停评估工具 Pro (Final)";
             this.BackColor = UiFactory.ColorBack;
             this.ForeColor = UiFactory.ColorText;
 
-            // 2. 构建界面 (调用 UI 包)
             _ui = LayoutBuilder.Build(this);
             
-            // 绑定按钮事件 (通过查找控件或传入)
-            // 获取 Button 面板比较麻烦，我们在 LayoutBuilder 中留了个 helper
-            var leftPanel = (Panel)_ui.ListHistory.Parent;
-            var btnPanel = (FlowLayoutPanel)leftPanel.Controls[1]; // 索引依赖于 LayoutBuilder 添加顺序：List(0), Btn(1), Grid(2) -> 实际是反的因为 Dock Fill
-            // 修正：Dock Fill 的控件在 Controls 集合中通常索引较小，但为了稳妥，我们在 LayoutBuilder 加了 AddButtons
-            LayoutBuilder.AddButtons(_ui, btnPanel, OnRefresh, OnMap, OnThreshold, OnCount);
+            // 获取 Button 面板 (LeftPanel -> BottomControl)
+            // 更加稳健的获取方式：
+            var contentLayout = (TableLayoutPanel)this.Controls[0].Controls[1]; // MainLayout -> ContentLayout
+            var leftPanel = (Panel)contentLayout.Controls[0];
+            // 按照 LayoutBuilder 的添加顺序: List(0), Btn(1), KeyContainer(2) -> 因为 Dock 顺序反向
+            // Fill 是 0 (ListHistory), Bottom 是 1 (LayoutPanel), Top 是 2 (KeyContainer)
+            // 实际上 WinForms Controls 集合顺序通常是后添加的在前面(Z-order)，但对于 Dock 来说不一定
+            // 最安全的方式是直接遍历找 FlowLayoutPanel
+            FlowLayoutPanel btnPanel = null;
+            foreach(Control c in leftPanel.Controls) {
+                if (c is FlowLayoutPanel) { btnPanel = (FlowLayoutPanel)c; break; }
+            }
 
-            // 3. 初始化核心 (调用 Core 包)
+            if (btnPanel != null)
+                LayoutBuilder.AddButtons(_ui, btnPanel, OnRefresh, OnMap, OnThreshold, OnCount, OnReset);
+
             _inputCore = new InputCore();
-            _inputCore.OnGameKeyEvent += OnGameKey; // 订阅输入事件
+            _inputCore.OnGameKeyEvent += OnGameKey;
             _strafeLogic = new StrafeLogic();
 
-            // 4. 注册 RawInput
             _inputCore.Register(this.Handle);
+            
+            // 初始化文本
+            UpdateUiText();
+        }
+
+        // ... (OnGameKey, LogStrafeResult, UpdateKeyColor, WndProc 保持不变) ...
+        // ... 请确保 UpdateKeyColor 方法里映射是正确的 ...
+
+        // === 按钮事件 ===
+
+        private void OnReset(object s, EventArgs e)
+        {
+            if (MessageBox.Show("确定要重置所有设置和数据吗？", "重置", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            {
+                // 1. 重置参数
+                _threshold = DefaultThreshold;
+                _recCount = DefaultRecCount;
+
+                // 2. 重置映射
+                _inputCore.ResetMapping();
+
+                // 3. 重置数据和状态
+                _ui.ListHistory.Items.Clear();
+                _ui.GraphAD.Clear();
+                _ui.GraphAD.SetLimit(_recCount);
+                _ui.GraphWS.Clear();
+                _ui.GraphWS.SetLimit(_recCount);
+                _strafeLogic.Reset();
+
+                // 4. 重置 UI 反馈
+                _ui.LblFeedback.Text = "Ready";
+                _ui.LblFeedback.BackColor = Color.FromArgb(50, 50, 50);
+
+                MessageBox.Show("已恢复默认设置。", "完成");
+            }
+        }
+
+        private void UpdateUiText()
+        {
+            // 这里可以统一更新按钮文字，支持多语言
+            _ui.BtnRefresh.Text = Localization.Get("Btn_Refresh");
+            _ui.BtnMap.Text = Localization.Get("Btn_Mapping");
+            _ui.BtnThreshold.Text = Localization.Get("Btn_Threshold");
+            _ui.BtnCount.Text = Localization.Get("Btn_Count");
+            _ui.BtnReset.Text = Localization.Get("Btn_Reset");
+            
+            _ui.GraphAD.SetTitle(Localization.Get("Chart_AD_Title"));
+            _ui.GraphWS.SetTitle(Localization.Get("Chart_WS_Title"));
         }
 
         // === 逻辑事件处理 ===

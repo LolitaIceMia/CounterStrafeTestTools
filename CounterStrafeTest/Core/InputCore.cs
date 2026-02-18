@@ -31,9 +31,8 @@ namespace CounterStrafeTest.Core
 
         public void Register(IntPtr hwnd)
         {
-            // 注册两个设备：键盘(Usage 0x06) 和 鼠标(Usage 0x02)
             var rid = new NativeMethods.RAWINPUTDEVICE[2];
-            
+    
             // Keyboard
             rid[0].usUsagePage = 0x01;
             rid[0].usUsage = 0x06;
@@ -46,7 +45,13 @@ namespace CounterStrafeTest.Core
             rid[1].dwFlags = NativeMethods.RIDEV_INPUTSINK;
             rid[1].hwndTarget = hwnd;
 
-            NativeMethods.RegisterRawInputDevices(rid, 2, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTDEVICE)));
+            // 检查注册是否成功
+            bool success = NativeMethods.RegisterRawInputDevices(rid, 2, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTDEVICE)));
+            if (!success)
+            {
+                int error = Marshal.GetLastWin32Error();
+                throw new Exception($"RawInput 注册失败，错误代码: {error}");
+            }
         }
 
         public void ProcessMessage(Message m)
@@ -54,8 +59,9 @@ namespace CounterStrafeTest.Core
             if (m.Msg != NativeMethods.WM_INPUT) return;
 
             uint dwSize = 0;
+            // 获取所需缓冲区大小
             NativeMethods.GetRawInputData(m.LParam, NativeMethods.RID_INPUT, IntPtr.Zero, ref dwSize, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTHEADER)));
-            
+    
             if (dwSize == 0) return;
 
             IntPtr buffer = Marshal.AllocHGlobal((int)dwSize);
@@ -64,18 +70,16 @@ namespace CounterStrafeTest.Core
                 if (NativeMethods.GetRawInputData(m.LParam, NativeMethods.RID_INPUT, buffer, ref dwSize, (uint)Marshal.SizeOf(typeof(NativeMethods.RAWINPUTHEADER))) == dwSize)
                 {
                     var raw = Marshal.PtrToStructure<NativeMethods.RAWINPUT>(buffer);
-                    
-                    // 处理键盘
+            
                     if (raw.header.dwType == NativeMethods.RIM_TYPEKEYBOARD)
                     {
                         Keys vKey = (Keys)raw.keyboard.VKey;
-                        bool isDown = (raw.keyboard.Flags & 1) == 0;
+                        // Flags = 0 或 2 为按下，1 或 3 为松开 (RI_KEY_BREAK 位)
+                        bool isDown = (raw.keyboard.Flags & 1) == 0; 
                         HandlePhysicalKey(vKey, isDown);
                     }
-                    // 处理鼠标 (检测左键按下)
                     else if (raw.header.dwType == NativeMethods.RIM_TYPEMOUSE)
                     {
-                        // 0x0001 = Left Button Down
                         if ((raw.mouse.ulButtons & NativeMethods.RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
                         {
                             NativeMethods.QueryPerformanceCounter(out long now);
@@ -89,6 +93,11 @@ namespace CounterStrafeTest.Core
 
         private void HandlePhysicalKey(Keys physKey, bool isDown)
         {
+            if (physKey == Keys.F11)
+            {
+                OnGameKeyEvent?.Invoke(this, new GameKeyEventArgs(Keys.F11, physKey, isDown));
+                return;
+            }
             if (!_keyMap.ContainsKey(physKey)) return;
             Keys logicKey = _keyMap[physKey];
 

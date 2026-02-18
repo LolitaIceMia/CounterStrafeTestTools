@@ -12,17 +12,18 @@ namespace CounterStrafeTest.UI
         private readonly InputCore _inputCore;
         private readonly StrafeLogic _strafeLogic;
         
-        // 用于测试功能的随机数生成器
         private Random _rng = new Random();
-
         private int _threshold = 120;
         private int _recCount = 40;
-        // --- 模拟模式变量 ---
+
+        // --- 模拟测试模式变量 ---
         private bool _isSimMode = false;
         private StrafeResult _simLastStrafe = null;
         private long _simLastFireTick = 0;
         private bool _simResultShown = false;
-        // -------------------
+
+        // --- 调试模式变量 ---
+        private bool _isDebugMode = false;
 
         public MainForm()
         {
@@ -32,20 +33,29 @@ namespace CounterStrafeTest.UI
 
             _ui = LayoutBuilder.Build(this);
             
-            // 绑定按钮事件，注意这里第一个参数是 OnTest
-            LayoutBuilder.AddButtons(_ui, OnTest, OnMap, OnThreshold, OnCount, OnReset);
-            _ui.BtnExitSim.Click += (s, e) => ToggleSimulationMode(false);
+            // 绑定按钮事件：第一个按钮改为触发模拟测试
+            LayoutBuilder.AddButtons(_ui, OnTestModeToggle, OnMap, OnThreshold, OnCount, OnReset);
+            
+            // 绑定模拟模式下的退出按钮
+            if (_ui.BtnExitSim != null)
+            {
+                _ui.BtnExitSim.Click += (s, e) => ToggleSimulationMode(false);
+            }
 
             _inputCore = new InputCore();
             _inputCore.OnGameKeyEvent += OnGameKey;
-            _inputCore.OnFireEvent += OnFireInput; // 绑定开火事件
+            _inputCore.OnFireEvent += OnFireInput; // 订阅鼠标开火事件
+
             _strafeLogic = new StrafeLogic();
+            
+            // 注册窗口句柄以监听 Raw Input
             _inputCore.Register(this.Handle);
             
             UpdateUiText();
         }
-        
-        // 切换常规模式/模拟模式
+
+        #region 模式切换逻辑
+
         private void OnTestModeToggle(object s, EventArgs e)
         {
             ToggleSimulationMode(true);
@@ -54,82 +64,120 @@ namespace CounterStrafeTest.UI
         private void ToggleSimulationMode(bool enable)
         {
             _isSimMode = enable;
-            _ui.PnlSimulation.Visible = enable;
+            if (_ui.PnlSimulation != null)
+            {
+                _ui.PnlSimulation.Visible = enable;
+                _ui.PnlSimulation.BringToFront();
+            }
             
             if (enable)
             {
                 ResetSimState();
             }
         }
+
         private void ResetSimState()
         {
             _simLastStrafe = null;
             _simLastFireTick = 0;
             _simResultShown = false;
-            _ui.LblSimStatus.Text = "请急停 + 开火 (Strafe + Fire)";
-            _ui.LblSimStatus.ForeColor = Color.White;
-            _ui.LblSimResult.Text = "等待操作...";
+            if (_ui.LblSimStatus != null)
+            {
+                _ui.LblSimStatus.Text = "准备就绪：请执行急停 + 开火";
+                _ui.LblSimStatus.ForeColor = Color.White;
+            }
+            if (_ui.LblSimResult != null)
+            {
+                _ui.LblSimResult.Text = "等待操作...";
+            }
         }
 
-        // 处理开火逻辑 (Mouse Click)
+        #endregion
+
+        #region 输入处理逻辑
+
         private void OnFireInput(long fireTick)
         {
             if (!_isSimMode || _simResultShown) return;
 
-            // 记录开火时间
+            // 记录开火的高精度时间戳
             _simLastFireTick = fireTick;
 
-            // 如果已经检测到急停，立即计算结果
+            // 如果急停数据已捕获，立即计算综合结果
             if (_simLastStrafe != null)
             {
-                CalculateSimResult();
+                this.Invoke(new Action(CalculateSimResult));
             }
-            // 如果还没检测到急停，可能用户先开火了（Too Early），
-            // 或者急停逻辑还没跑完，我们给一点点缓冲，或者直接等待急停事件触发计算
         }
 
-        // 处理键盘逻辑
         private void OnGameKey(object sender, GameKeyEventArgs e) 
         {
-            this.Invoke(new Action(() => UpdateKeyColor(e.LogicKey, e.IsDown)));
-            var result = _strafeLogic.ProcessLogicKey(e.LogicKey, e.IsDown);
-             
-            if (result != null && result.IsValid) 
+            this.Invoke(new Action(() => 
             {
-                // 常规模式逻辑
-                if (!_isSimMode && Math.Abs(result.Latency) <= _threshold) {
-                    this.Invoke(new Action(() => LogStrafeResult(result)));
-                }
-                // 模拟模式逻辑
-                else if (_isSimMode && !_simResultShown)
+                // 1. 处理调试模式开关 (F11 按下)
+                if (e.PhysicalKey == Keys.F11 && e.IsDown)
                 {
-                    _simLastStrafe = result;
-                    this.Invoke(new Action(() => 
+                    _isDebugMode = !_isDebugMode;
+                    string status = _isDebugMode ? "开启" : "关闭";
+                    _ui.ListHistory.Items.Insert(0, $"[SYSTEM] >>> 调试模式已{status} <<<");
+                    return;
+                }
+
+                // 2. 调试输出逻辑
+                if (_isDebugMode)
+                {
+                    string action = e.IsDown ? "被按下" : "被松开";
+                    _ui.ListHistory.Items.Insert(0, $"[DEBUG] {e.PhysicalKey} {action} (逻辑映射: {e.LogicKey})");
+                }
+
+                // 3. 更新 UI 指示灯
+                UpdateKeyColor(e.LogicKey, e.IsDown);
+            }));
+
+            // 4. 急停核心判定 (F11 除外)
+            if (e.LogicKey != Keys.F11)
+            {
+                var result = _strafeLogic.ProcessLogicKey(e.LogicKey, e.IsDown);
+                
+                if (result != null && result.IsValid) 
+                {
+                    if (!_isSimMode)
                     {
-                        // 如果已经开过火了，立即计算
-                        if (_simLastFireTick > 0) CalculateSimResult();
-                        // 否则等待开火
-                    }));
+                        // 常规模式：记录并显示气泡
+                        if (Math.Abs(result.Latency) <= _threshold)
+                        {
+                            this.Invoke(new Action(() => LogStrafeResult(result)));
+                        }
+                    }
+                    else if (!_simResultShown)
+                    {
+                        // 模拟模式：暂存急停结果，等待开火
+                        _simLastStrafe = result;
+                        if (_simLastFireTick > 0)
+                        {
+                            this.Invoke(new Action(CalculateSimResult));
+                        }
+                    }
                 }
             }
         }
-        
+
+        #endregion
+
+        #region 结果计算与显示
+
         private void CalculateSimResult()
         {
-            if (_simLastStrafe == null || _simLastFireTick == 0) return;
+            if (_simLastStrafe == null || _simLastFireTick == 0 || _simResultShown) return;
             
-            _simResultShown = true; // 锁定结果，防止多次触发
+            _simResultShown = true;
 
-            // 1. 计算射击延迟 (Shooting Latency)
-            // TimeDiff = FireTime - StrafeStopTime
-            // 正数 = 急停后开火 (正常)
-            // 负数 = 急停完成前开火 (过早)
+            // 计算射击延迟：开火时刻 - 急停完成时刻
             long freq = _strafeLogic.Frequency;
             double shootDelayMs = (double)(_simLastFireTick - _simLastStrafe.StopTick) * 1000.0 / freq;
 
-            // 2. 评级
-            string grade = "MISS";
-            Color gradeColor = Color.Gray;
+            string grade;
+            Color gradeColor;
 
             if (shootDelayMs < 0)
             {
@@ -139,7 +187,7 @@ namespace CounterStrafeTest.UI
             else if (shootDelayMs <= 5.0)
             {
                 grade = "PERFECT (完美)";
-                gradeColor = Color.Gold; // 金色传说
+                gradeColor = Color.Gold;
             }
             else if (shootDelayMs <= 10.0)
             {
@@ -152,53 +200,28 @@ namespace CounterStrafeTest.UI
                 gradeColor = Color.Orange;
             }
 
-            // 3. 构造显示文本
-            string strafeInfo = $"急停延迟: {_simLastStrafe.Latency:F1}ms ({_simLastStrafe.Axis})";
-            string shootInfo = $"射击延迟: {shootDelayMs:F1}ms";
-            
-            _ui.LblSimStatus.Text = grade;
-            _ui.LblSimStatus.ForeColor = gradeColor;
-            _ui.LblSimResult.Text = $"{strafeInfo}\n{shootInfo}\n\n再次操作以重试...";
+            if (_ui.LblSimStatus != null)
+            {
+                _ui.LblSimStatus.Text = grade;
+                _ui.LblSimStatus.ForeColor = gradeColor;
+            }
 
-            // 使用显式命名空间引用，消除不明确的引用错误
+            if (_ui.LblSimResult != null)
+            {
+                _ui.LblSimResult.Text = $"急停延迟: {_simLastStrafe.Latency:F1}ms ({_simLastStrafe.Axis})\n" +
+                                        $"射击延迟: {shootDelayMs:F1}ms\n\n" +
+                                        $"系统将在 2 秒后自动重置...";
+            }
+
+            // 自动重置状态，使用显式命名空间以修复歧义
             System.Windows.Forms.Timer resetTimer = new System.Windows.Forms.Timer { Interval = 2000 };
-            resetTimer.Tick += (s, args) => {
-                // 停止并释放计时器，防止内存泄漏和重复触发
+            resetTimer.Tick += (s, args) => 
+            {
                 resetTimer.Stop();
                 resetTimer.Dispose();
-
-                // 只有在依然处于模拟模式时才重置状态
-                if (_isSimMode) 
-                {
-                    ResetSimState();
-                }
+                if (_isSimMode) ResetSimState();
             };
             resetTimer.Start();
-        }
-
-        private void ShowFeedbackBubble(string text, Color color)
-        {
-            // 清理旧气泡
-            while (_ui.PnlBubbleArea.Controls.Count > 0)
-            {
-                Control old = _ui.PnlBubbleArea.Controls[0];
-                _ui.PnlBubbleArea.Controls.Remove(old);
-                old.Dispose();
-            }
-            
-            var bubble = new BubbleControl(text, color);
-            // 气泡位置
-            bubble.Location = new Point(20, 20);
-            
-            bubble.AnimationComplete += (s, e) => {
-                if (!_ui.PnlBubbleArea.IsDisposed && !bubble.IsDisposed)
-                {
-                    _ui.PnlBubbleArea.Controls.Remove(bubble);
-                    bubble.Dispose();
-                }
-            };
-
-            _ui.PnlBubbleArea.Controls.Add(bubble);
         }
 
         private void LogStrafeResult(StrafeResult r)
@@ -215,6 +238,48 @@ namespace CounterStrafeTest.UI
 
             if (r.Axis == "AD") _ui.GraphAD.AddValue((float)r.Latency);
             else _ui.GraphWS.AddValue((float)r.Latency);
+        }
+
+        private void ShowFeedbackBubble(string text, Color color)
+        {
+            if (_ui.PnlBubbleArea.IsDisposed) return;
+
+            while (_ui.PnlBubbleArea.Controls.Count > 0)
+            {
+                Control old = _ui.PnlBubbleArea.Controls[0];
+                _ui.PnlBubbleArea.Controls.Remove(old);
+                old.Dispose();
+            }
+            
+            var bubble = new BubbleControl(text, color) { Location = new Point(20, 20) };
+            bubble.AnimationComplete += (s, e) => 
+            {
+                if (!_ui.PnlBubbleArea.IsDisposed && !bubble.IsDisposed)
+                {
+                    _ui.PnlBubbleArea.Controls.Remove(bubble);
+                    bubble.Dispose();
+                }
+            };
+            _ui.PnlBubbleArea.Controls.Add(bubble);
+        }
+
+        private void UpdateKeyColor(Keys k, bool isDown) 
+        {
+            Label t = k switch { 
+                Keys.W => _ui.LblW, Keys.A => _ui.LblA, 
+                Keys.S => _ui.LblS, Keys.D => _ui.LblD, _ => null 
+            };
+            if (t != null) t.BackColor = isDown ? Color.LimeGreen : Color.LightGray;
+        }
+
+        #endregion
+
+        #region 基础窗体逻辑与事件处理
+
+        protected override void WndProc(ref Message m) 
+        {
+            if (m.Msg == NativeMethods.WM_INPUT) _inputCore.ProcessMessage(m);
+            base.WndProc(ref m);
         }
 
         private void OnReset(object s, EventArgs e)
@@ -235,11 +300,7 @@ namespace CounterStrafeTest.UI
 
         private void UpdateUiText() 
         {
-            // --- 【关键修复】 ---
-            // 使用 BtnTest 而不是 BtnRefresh
-            _ui.BtnTest.Text = Localization.Get("Btn_Test");
-            // -------------------
-            
+            _ui.BtnTest.Text = "模拟测试"; 
             _ui.BtnReset.Text = Localization.Get("Btn_Reset");
             _ui.BtnMap.Text = Localization.Get("Btn_Mapping");
             _ui.BtnThreshold.Text = Localization.Get("Btn_Threshold");
@@ -248,35 +309,24 @@ namespace CounterStrafeTest.UI
             _ui.GraphWS.SetTitle(Localization.Get("Chart_WS_Title"));
         }
 
-        private void OnTest(object s, EventArgs e)
-        {
-            // 切换到模拟测试模式（即您要求的 UI 刷新为模拟页面）
-            ToggleSimulationMode(true); 
-        }
-        
-        
-        private void UpdateKeyColor(Keys k, bool isDown) {
-            Label t = k switch { Keys.W => _ui.LblW, Keys.A => _ui.LblA, Keys.S => _ui.LblS, Keys.D => _ui.LblD, _ => null };
-            if (t != null) t.BackColor = isDown ? Color.LimeGreen : Color.LightGray;
-        }
-        
-        protected override void WndProc(ref Message m) {
-            if (m.Msg == NativeMethods.WM_INPUT) _inputCore.ProcessMessage(m);
-            base.WndProc(ref m);
-        }
-        
-        // 按钮事件占位
-        private void OnMap(object s, EventArgs e) { 
-             string val = InputBox.Show("Mapping", "Enter 4 letters (WASD):");
+        private void OnMap(object s, EventArgs e) 
+        { 
+             string val = InputBox.Show("映射配置", "请输入4个字母 (例如 WASD):");
              if (!string.IsNullOrEmpty(val)) _inputCore.UpdateMapping(val.ToUpper());
         }
-        private void OnThreshold(object s, EventArgs e) {
-             string val = InputBox.Show("Threshold", "Enter ms:", _threshold.ToString());
+
+        private void OnThreshold(object s, EventArgs e) 
+        {
+             string val = InputBox.Show("判定阈值", "输入毫秒数 (ms):", _threshold.ToString());
              if (int.TryParse(val, out int v)) _threshold = v;
         }
-        private void OnCount(object s, EventArgs e) {
-             string val = InputBox.Show("Limit", "Count:", _recCount.ToString());
+
+        private void OnCount(object s, EventArgs e) 
+        {
+             string val = InputBox.Show("样本上限", "显示最近次数:", _recCount.ToString());
              if (int.TryParse(val, out int v)) { _recCount = v; _ui.GraphAD.SetLimit(v); _ui.GraphWS.SetLimit(v); }
         }
+
+        #endregion
     }
 }

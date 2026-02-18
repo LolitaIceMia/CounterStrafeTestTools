@@ -41,8 +41,8 @@ namespace CounterStrafeTest.Core
         public struct RAWINPUT
         {
             [FieldOffset(0)] public RAWINPUTHEADER header;
-            [FieldOffset(16)] public RAWKEYBOARD keyboard; // 64bit offset
-            [FieldOffset(16)] public RAWMOUSE mouse;       // Union
+            [FieldOffset(24)] public RAWKEYBOARD keyboard; 
+            [FieldOffset(24)] public RAWMOUSE mouse;       
         }
 
         [StructLayout(LayoutKind.Sequential)]

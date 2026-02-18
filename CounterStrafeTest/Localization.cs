@@ -39,6 +39,8 @@ namespace CounterStrafeTest
                     { "Eval_Late", "过迟" },
 
                     // 模拟模式 UI
+                    { "Item_1", "急停延迟" },
+                    { "Item_2", "开火延迟" },
                     { "Sim_Ready", "准备就绪：请执行急停 + 开火" },
                     { "Sim_Waiting", "等待操作..." },
                     { "Sim_Reset_Tip", "2秒后系统自动重置..." },
@@ -94,6 +96,8 @@ namespace CounterStrafeTest
                     { "Eval_Late", "Late" },
 
                     // Sim Mode UI
+                    { "Item_1", "Strafe Latency" },
+                    { "Item_2", "Shoot Delay" },
                     { "Sim_Ready", "Ready: Perform Strafe + Fire" },
                     { "Sim_Waiting", "Waiting..." },
                     { "Sim_Reset_Tip", "Resetting in 2s..." },

@@ -268,8 +268,8 @@ namespace CounterStrafeTest.UI
 
             if (_ui.LblSimResult != null)
             {
-                _ui.LblSimResult.Text = $"[Item 1] Strafe: {strafeLatency:F1}ms\n" +
-                                        $"[Item 2] Fire: {shootDelayMs:F1}ms\n\n" +
+                _ui.LblSimResult.Text = $"{Localization.Get("Item_1")}: {strafeLatency:F1}ms\n" +
+                                        $"{Localization.Get("Item_2")}: {shootDelayMs:F1}ms\n\n" +
                                         $"{Localization.Get(tipKey)}\n" +
                                         $"{Localization.Get("Sim_Reset_Tip")}";
             }

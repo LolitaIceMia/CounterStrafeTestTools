@@ -16,6 +16,9 @@ namespace CounterStrafeTest.UI
         private int _threshold = 120;
         private int _recCount = 40;
 
+        // --- 磁轴模式变量 ---
+        private readonly bool _isMagneticMode; // [新增] 存储磁轴状态
+
         // --- 模拟测试模式变量 ---
         private bool _isSimMode = false;
         private StrafeResult _simLastStrafe = null;
@@ -25,14 +28,19 @@ namespace CounterStrafeTest.UI
         // --- 调试模式变量 ---
         private bool _isDebugMode = false;
 
-        public MainForm()
+        // [修改] 构造函数增加 isMagnetic 参数
+        public MainForm(bool isMagnetic)
         {
+            _isMagneticMode = isMagnetic; // [新增] 保存状态
+
             // 基础窗体设置
             this.Text = "CS2 急停评估工具 Pro";
             this.BackColor = UiFactory.ColorBack;
             this.ForeColor = UiFactory.ColorText;
 
-            _ui = LayoutBuilder.Build(this);
+            // [修改] 将 isMagnetic 传递给 LayoutBuilder
+            // 注意：您需要同步修改 LayoutBuilder.Build 方法签名
+            _ui = LayoutBuilder.Build(this, _isMagneticMode);
             
             // 1. 绑定语言切换按钮 (右上角)
             if (_ui.BtnLang != null)
@@ -45,23 +53,35 @@ namespace CounterStrafeTest.UI
                 };
             }
 
-            // 2. 绑定主界面功能按钮
+            // 2. 绑定磁轴调试按钮 (如果存在) [新增]
+            if (_ui.BtnMagnetDebug != null)
+            {
+                _ui.BtnMagnetDebug.Click += (s, e) => 
+                {
+                    // 打开磁轴调试页面
+                    // 注意：您需要创建 MagnetDebugForm 类
+                    var debugForm = new MagnetDebugForm();
+                    debugForm.ShowDialog(this); 
+                };
+            }
+
+            // 3. 绑定主界面功能按钮
             LayoutBuilder.AddButtons(_ui, OnTestModeToggle, OnMap, OnThreshold, OnCount, OnReset);
             
-            // 3. 绑定模拟测试界面专用退出按钮
+            // 4. 绑定模拟测试界面专用退出按钮
             if (_ui.BtnExitSim != null)
             {
                 _ui.BtnExitSim.Click += (s, e) => ToggleSimulationMode(false);
             }
 
-            // 4. 初始化核心逻辑
+            // 5. 初始化核心逻辑
             _inputCore = new InputCore();
             _inputCore.OnGameKeyEvent += OnGameKey;
             _inputCore.OnFireEvent += OnFireInput; 
 
             _strafeLogic = new StrafeLogic();
             
-            // 5. 注册 Raw Input 监听
+            // 6. 注册 Raw Input 监听
             _inputCore.Register(this.Handle);
             
             UpdateUiText();
@@ -274,7 +294,7 @@ namespace CounterStrafeTest.UI
                                         $"{Localization.Get("Sim_Reset_Tip")}";
             }
 
-            // 3. 自动重置定时器 (显式指定命名空间解决歧义)
+            // 3. 自动重置定时器
             System.Windows.Forms.Timer resetTimer = new System.Windows.Forms.Timer { Interval = 2000 };
             resetTimer.Tick += (s, args) => 
             {
@@ -370,6 +390,12 @@ namespace CounterStrafeTest.UI
             _ui.GraphAD.SetTitle(Localization.Get("Chart_AD_Title"));
             _ui.GraphWS.SetTitle(Localization.Get("Chart_WS_Title"));
             
+            
+            if (_ui.BtnMagnetDebug != null)
+            {
+                _ui.BtnMagnetDebug.Text = Localization.Get("Btn_MagnetDebug");
+            }
+
             if (_isSimMode && !_simResultShown) ResetSimState();
         }
 

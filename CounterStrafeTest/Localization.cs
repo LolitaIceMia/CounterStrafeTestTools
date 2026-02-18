@@ -46,8 +46,8 @@ namespace CounterStrafeTest
                     { "Sim_Reset_Tip", "2秒后系统自动重置..." },
                     
                     // 判定等级
-                    { "Grade_Early_Strafe_Overlap", "急停过早 (重叠过长)" },
-                    { "Grade_Late_Strafe_Slow", "急停过迟 (松键太慢)" },
+                    { "Grade_Early_Strafe_Overlap", "急停过早" },
+                    { "Grade_Late_Strafe_Slow", "急停过迟" },
                     { "Grade_Early_Fire", "开火过早" },
                     { "Grade_Late_Fire", "开火过迟" },
                     { "Grade_Perfect", "PERFECT (完美)" },
@@ -103,8 +103,8 @@ namespace CounterStrafeTest
                     { "Sim_Reset_Tip", "Resetting in 2s..." },
 
                     // Grade Results
-                    { "Grade_Early_Strafe_Overlap", "Too Early (Overlap)" },
-                    { "Grade_Late_Strafe_Slow", "Too Late (Slow Release)" },
+                    { "Grade_Early_Strafe_Overlap", "Too Early" },
+                    { "Grade_Late_Strafe_Slow", "Too Late" },
                     { "Grade_Early_Fire", "Fire Early" },
                     { "Grade_Late_Fire", "Fire Late" },
                     { "Grade_Perfect", "PERFECT" },

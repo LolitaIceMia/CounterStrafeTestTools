@@ -1,70 +1,47 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CounterStrafeTest.Utils
 {
     public static class UiFactory
     {
-        // 统一背景色配置
-        public static readonly Color ColorBack = Color.FromArgb(30, 30, 30);
-        public static readonly Color ColorPanel = Color.FromArgb(40, 40, 40);
-        public static readonly Color ColorText = Color.White;
+        // 定义全局使用的颜色
+        public static readonly Color ColorBack = Color.FromArgb(18, 18, 18);
+        public static readonly Color ColorText = Color.FromArgb(220, 220, 220);
+        
+        // [修复] 添加 ColorFail 定义，用于重置按钮的红色背景
+        public static readonly Color ColorFail = Color.FromArgb(180, 60, 60); 
 
-        public static Label CreateTitleLabel(string text)
-        {
-            return new Label
-            {
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Microsoft YaHei", 24, FontStyle.Bold),
-                Text = text,
-                BackColor = Color.FromArgb(50, 50, 50),
-                ForeColor = ColorText
-            };
-        }
-
+        // 创建按键显示标签 (WASD)
         public static Label CreateKeyLabel(string text)
         {
             return new Label
             {
                 Text = text,
-                AutoSize = false,             
-                Size = new Size(50, 50),  
+                Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 BackColor = Color.LightGray,
                 ForeColor = Color.Black,
-                Font = new Font("Arial", 16, FontStyle.Bold), // 字体稍微加大一点
-                Margin = new Padding(4) 
+                Margin = new Padding(4)
             };
         }
 
-        public static Button CreateButton(string text, EventHandler onClick)
+        // [重点修复] 方法签名修改为接收 (string, Color?)
+        // 之前可能是 (string, EventHandler)，导致传入 ColorFail 时报错
+        public static Button CreateButton(string textKey, Color? bgColor = null)
         {
-            var btn = new Button
+            return new Button
             {
-                Text = text,
-                Width = 75,
-                Height = 35,
-                BackColor = Color.Gray,
+                // 使用 Localization 获取文本，如果 textKey 为 null 则显示空
+                Text = Localization.Get(textKey),
+                Size = new Size(100, 35),
+                FlatStyle = FlatStyle.Flat,
+                // 如果传入了 bgColor 则使用，否则使用默认深灰色
+                BackColor = bgColor ?? Color.FromArgb(50, 50, 50),
                 ForeColor = Color.White,
-                FlatStyle = FlatStyle.Popup,
-                Font = new Font("Microsoft YaHei", 9)
-            };
-            btn.Click += onClick;
-            return btn;
-        }
-
-        public static ListBox CreateLogList()
-        {
-            return new ListBox
-            {
-                Dock = DockStyle.Fill,
-                BackColor = ColorPanel,
-                ForeColor = Color.LightGray,
-                Font = new Font("Consolas", 10),
-                IntegralHeight = false,
-                BorderStyle = BorderStyle.FixedSingle
+                Cursor = Cursors.Hand,
+                Margin = new Padding(5)
             };
         }
     }

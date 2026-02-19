@@ -72,7 +72,9 @@ namespace CounterStrafeTest
 
                     // 图表标题
                     { "Chart_AD_Title", "AD 急停时间差 (ms)" },
-                    { "Chart_WS_Title", "WS 急停时间差 (ms)" }
+                    { "Chart_WS_Title", "WS 急停时间差 (ms)" },
+                    { "Btn_Start_Test", "开始测试并调节" },
+                    { "Magnet_Report_Title", "磁轴校准报告" },
                 }
             },
             {
@@ -129,7 +131,9 @@ namespace CounterStrafeTest
 
                     // Charts
                     { "Chart_AD_Title", "AD Strafe Timing (ms)" },
-                    { "Chart_WS_Title", "WS Strafe Timing (ms)" }
+                    { "Chart_WS_Title", "WS Strafe Timing (ms)" },
+                    { "Btn_Start_Test", "Start Calibration" },
+                    { "Magnet_Report_Title", "Magnetic Calibration Report" },
                 }
             }
         };

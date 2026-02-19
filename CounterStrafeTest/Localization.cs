@@ -75,6 +75,30 @@ namespace CounterStrafeTest
                     { "Chart_WS_Title", "WS 急停时间差 (ms)" },
                     { "Btn_Start_Test", "开始测试并调节" },
                     { "Magnet_Report_Title", "磁轴校准报告" },
+                    { "Btn_Start_Test", "开始测试并调节" },
+                    { "Magnet_Report_Title", "磁轴校准报告" },
+                    { "Mag_Report_Mean", "平均延迟" },
+                    { "Mag_Report_StdDev", "稳定性(标准差)" },
+                    { "Mag_Report_Rec", "--- 调节建议 ---" },
+                    { "Mag_Report_Settings", "推荐设置" },
+                    { "Mag_Setting_AP", "触发行程 (AP)" },
+                    { "Mag_Setting_RT", "重置行程 (RT)" },
+                    { "Mag_Setting_DZ", "死区 (Deadzone)" },
+
+// 算法分析文本
+                    { "Mag_Analysis_Early", "检测到急停倾向过早 (Overlap)" },
+                    { "Mag_Rec_Decrease_Reset", "建议：减小快速重置行程 (RT Reset)，加快松键响应。" },
+
+                    { "Mag_Analysis_Late", "检测到急停倾向过迟 (Gap)" },
+                    { "Mag_Rec_Decrease_Actuation", "建议：减小快速触发行程 (RT Actuation)，加快触发响应。" },
+
+                    { "Mag_Analysis_Good", "急停时机控制良好，保持当前行程设置。" },
+
+                    { "Mag_Analysis_Unstable", "检测到信号颤噪或操作抖动 (High Variance)" },
+                    { "Mag_Rec_Increase_Deadzone", "建议：增加动态死区 (Dynamic Hysteresis) 以过滤噪声。" }, // 对应 CSV 中的 "Stability Tax"
+
+                    { "Mag_Analysis_Mispress", "检测到可能的误触 (Accidental Press)" },
+                    { "Mag_Rec_Press_Deadzone", "建议：增大初始按下死区 (Press Deadzone) 至 0.3mm 以上。" } // 对应 CSV 中的 "按下阶段"
                 }
             },
             {
@@ -134,6 +158,29 @@ namespace CounterStrafeTest
                     { "Chart_WS_Title", "WS Strafe Timing (ms)" },
                     { "Btn_Start_Test", "Start Calibration" },
                     { "Magnet_Report_Title", "Magnetic Calibration Report" },
+                    { "Btn_Start_Test", "Start Calibration" },
+                    { "Magnet_Report_Title", "Magnetic Calibration Report" },
+                    { "Mag_Report_Mean", "Mean Latency" },
+                    { "Mag_Report_StdDev", "Stability (StdDev)" },
+                    { "Mag_Report_Rec", "--- Recommendations ---" },
+                    { "Mag_Report_Settings", "Recommended Settings" },
+                    { "Mag_Setting_AP", "Actuation (AP)" },
+                    { "Mag_Setting_RT", "Rapid Trigger (RT)" },
+                    { "Mag_Setting_DZ", "Deadzone" },
+
+                    { "Mag_Analysis_Early", "Tendency: Too Early (Overlap)" },
+                    { "Mag_Rec_Decrease_Reset", "Advice: Decrease RT Reset travel for faster release." },
+
+                    { "Mag_Analysis_Late", "Tendency: Too Late (Gap)" },
+                    { "Mag_Rec_Decrease_Actuation", "Advice: Decrease RT Actuation travel for faster press." },
+
+                    { "Mag_Analysis_Good", "Timing is good. Keep current settings." },
+
+                    { "Mag_Analysis_Unstable", "Detected signal chatter or instability" },
+                    { "Mag_Rec_Increase_Deadzone", "Advice: Increase Dynamic Hysteresis (Deadzone) to filter noise." },
+
+                    { "Mag_Analysis_Mispress", "Detected potential accidental presses" },
+                    { "Mag_Rec_Press_Deadzone", "Advice: Increase initial Press Deadzone to > 0.3mm." }
                 }
             }
         };

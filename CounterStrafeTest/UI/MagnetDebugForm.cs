@@ -155,18 +155,19 @@ namespace CounterStrafeTest.UI
             StopTest();
             var result = _logic.Analyze();
 
-            string msg = $"测试完成！\n\n" +
-                         $"平均延迟: {result.MeanLatency:F2} ms\n" +
-                         $"稳定性(标准差): {result.StdDev:F2}\n\n" +
-                         $"--- 调节建议 ---\n" +
+            string msg = $"{Localization.Get("Mag_Report_Mean")}: {result.MeanLatency:F2} ms\n" +
+                         $"{Localization.Get("Mag_Report_StdDev")}: {result.StdDev:F2}\n\n" +
+                         $"{Localization.Get("Mag_Report_Rec")}\n" +
                          $"{result.Recommendation}\n\n" +
-                         $"推荐设置:\n" +
-                         $"触发行程: {result.SuggestedActuation:F1} mm\n" +
-                         $"重置行程: {result.SuggestedReset:F1} mm\n" +
-                         $"死区: {result.SuggestedDeadzone:F1} mm";
+                         $"{Localization.Get("Mag_Report_Settings")}:\n" +
+                         $"{Localization.Get("Mag_Setting_AP")}: {result.SuggestedActuation:F1} mm\n" +
+                         $"{Localization.Get("Mag_Setting_RT")}: {result.SuggestedReset:F1} mm\n" +
+                         $"{Localization.Get("Mag_Setting_DZ")}: {result.SuggestedDeadzone:F2} mm";
 
-            MessageBox.Show(msg, "磁轴校准报告", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            _lblStatus.Text = "校准完成，请参考弹窗建议调整驱动";
+            MessageBox.Show(msg, Localization.Get("Magnet_Report_Title"), MessageBoxButtons.OK, MessageBoxIcon.Information);
+    
+            // 更新状态栏文本
+            _lblStatus.Text = Localization.Get("Magnet_Report_Title"); 
             _lblStatus.ForeColor = Color.LimeGreen;
         }
 
